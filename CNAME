@@ -1,4 +1,3 @@
-// To deploy: Create a React app (e.g., using Vite), install 'lucide-react', and paste this into App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Brain, 
