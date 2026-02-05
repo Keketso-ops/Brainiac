@@ -1,1 +1,950 @@
-brainiac.edu.za
+// To deploy: Create a React app (e.g., using Vite), install 'lucide-react', and paste this into App.jsx
+import React, { useState, useEffect } from 'react';
+import { 
+  Brain, 
+  Zap, 
+  BookOpen, 
+  Video, 
+  Phone, 
+  MapPin, 
+  Calculator, 
+  CheckCircle, 
+  Menu, 
+  X,
+  ChevronRight,
+  Mail,
+  ArrowRight,
+  Clock,
+  GraduationCap,
+  Trophy,
+  Gamepad2,
+  History,
+  Trash2,
+  Play,
+  RotateCcw
+} from 'lucide-react';
+
+// --- Components ---
+
+const Logo = () => (
+  <div className="flex items-center gap-2 group cursor-pointer">
+    <div className="relative w-10 h-10 flex items-center justify-center bg-indigo-600 rounded-xl shadow-lg group-hover:bg-indigo-700 transition-all duration-300">
+      <Brain className="text-white w-6 h-6 absolute" />
+      <Zap className="text-yellow-300 w-3 h-3 absolute top-1 right-1 animate-pulse" fill="currentColor" />
+    </div>
+    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+      Brainiac
+    </span>
+  </div>
+);
+
+const ServiceCard = ({ icon: Icon, title, description, features, price, popular, onSelect }) => (
+  <div className={`relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border ${popular ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100'}`}>
+    {popular && (
+      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+        Most Popular
+      </div>
+    )}
+    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${popular ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}>
+      <Icon className="w-6 h-6" />
+    </div>
+    <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+    <p className="text-slate-600 text-sm mb-4 h-10">{description}</p>
+    <div className="text-2xl font-bold text-slate-900 mb-6">
+      {price}
+    </div>
+    <ul className="space-y-3 mb-8">
+      {features.map((feature, idx) => (
+        <li key={idx} className="flex items-start text-sm text-slate-600">
+          <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+          <span>{feature}</span>
+        </li>
+      ))}
+    </ul>
+    <button 
+      onClick={onSelect}
+      className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+        popular 
+          ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+          : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+      }`}
+    >
+      Book Now
+    </button>
+  </div>
+);
+
+// --- New Feature: Math Game ---
+const MathGame = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [question, setQuestion] = useState({ text: '', answer: 0 });
+  const [userAnswer, setUserAnswer] = useState('');
+  const [difficulty, setDifficulty] = useState('primary'); // 'primary' or 'highschool'
+  const [feedback, setFeedback] = useState(null); // 'correct' or 'wrong'
+
+  const generateQuestion = (level) => {
+    let q = '', a = 0;
+    if (level === 'primary') {
+      const ops = ['+', '-', '*'];
+      const op = ops[Math.floor(Math.random() * ops.length)];
+      const n1 = Math.floor(Math.random() * 12) + 1;
+      const n2 = Math.floor(Math.random() * 12) + 1;
+      
+      if (op === '+') { q = `${n1} + ${n2}`; a = n1 + n2; }
+      if (op === '-') { q = `${n1 + n2} - ${n2}`; a = n1; } // Ensure positive result
+      if (op === '*') { q = `${n1} x ${n2}`; a = n1 * n2; }
+    } else {
+      // High school (Maths Lit style percentages and larger numbers)
+      const type = Math.floor(Math.random() * 3);
+      if (type === 0) { // Percentages
+        const n = Math.floor(Math.random() * 20) * 10; // 10, 20... 200
+        q = `10% of ${n}`; a = n * 0.1;
+      } else if (type === 1) { // Algebra-ish
+        const x = Math.floor(Math.random() * 10) + 1;
+        q = `2x = ${x * 2}, x = ?`; a = x;
+      } else { // Large multiplication
+        const n1 = Math.floor(Math.random() * 10) + 10;
+        const n2 = Math.floor(Math.random() * 5) + 2;
+        q = `${n1} x ${n2}`; a = n1 * n2;
+      }
+    }
+    setQuestion({ text: q, answer: a });
+  };
+
+  useEffect(() => {
+    let timer;
+    if (isPlaying && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setIsPlaying(false);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying, timeLeft]);
+
+  const startGame = () => {
+    setScore(0);
+    setTimeLeft(30);
+    setIsPlaying(true);
+    setUserAnswer('');
+    setFeedback(null);
+    generateQuestion(difficulty);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (parseFloat(userAnswer) === question.answer) {
+      setScore(prev => prev + 10);
+      setFeedback('correct');
+      setTimeout(() => setFeedback(null), 500);
+      generateQuestion(difficulty);
+      setUserAnswer('');
+    } else {
+      setFeedback('wrong');
+      setTimeout(() => setFeedback(null), 500);
+    }
+  };
+
+  return (
+    <div className="bg-slate-800 rounded-2xl p-6 text-white border border-slate-700 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-3xl opacity-20"></div>
+      
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <Gamepad2 className="text-indigo-400" />
+          <h3 className="font-bold text-lg">Neuro-Dash</h3>
+        </div>
+        <div className="flex gap-2">
+          <button 
+             onClick={() => setDifficulty('primary')}
+             className={`px-3 py-1 text-xs rounded-full ${difficulty === 'primary' ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+          >
+            Primary
+          </button>
+          <button 
+             onClick={() => setDifficulty('highschool')}
+             className={`px-3 py-1 text-xs rounded-full ${difficulty === 'highschool' ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+          >
+            HS
+          </button>
+        </div>
+      </div>
+
+      {!isPlaying && timeLeft === 30 ? (
+        <div className="text-center py-8">
+          <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+          <p className="text-slate-400 mb-6">Test your mental math speed!</p>
+          <button onClick={startGame} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 mx-auto transition-all">
+            <Play className="w-4 h-4" /> Start Game
+          </button>
+        </div>
+      ) : !isPlaying && timeLeft === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-4xl font-bold text-white mb-2">{score}</div>
+          <p className="text-slate-400 mb-6">Final Score</p>
+          <button onClick={startGame} className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 mx-auto transition-all">
+            <RotateCcw className="w-4 h-4" /> Try Again
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between mb-8">
+            <div className="text-center">
+              <span className="text-xs text-slate-400 uppercase">Time</span>
+              <div className="text-2xl font-mono font-bold text-red-400">{timeLeft}s</div>
+            </div>
+            <div className="text-center">
+              <span className="text-xs text-slate-400 uppercase">Score</span>
+              <div className="text-2xl font-mono font-bold text-green-400">{score}</div>
+            </div>
+          </div>
+          
+          <div className="text-center mb-6">
+            <div className={`text-4xl font-bold transition-all ${feedback === 'correct' ? 'text-green-400 scale-110' : feedback === 'wrong' ? 'text-red-400 shake' : 'text-white'}`}>
+              {question.text}
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="relative">
+            <input 
+              type="number" 
+              autoFocus
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl py-4 text-center text-2xl font-bold focus:border-indigo-500 focus:outline-none"
+              placeholder="?"
+            />
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- New Feature: Study Tracker ---
+const StudyTracker = () => {
+  const [logs, setLogs] = useState(() => {
+    // Try to load from local storage
+    const saved = localStorage.getItem('brainiac-logs');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [subject, setSubject] = useState('');
+  const [minutes, setMinutes] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('brainiac-logs', JSON.stringify(logs));
+  }, [logs]);
+
+  const addSession = (e) => {
+    e.preventDefault();
+    if (!subject || !minutes) return;
+    
+    const newLog = {
+      id: Date.now(),
+      subject,
+      minutes: parseInt(minutes),
+      date: new Date().toLocaleDateString()
+    };
+    
+    setLogs([newLog, ...logs]);
+    setSubject('');
+    setMinutes('');
+  };
+
+  const deleteLog = (id) => {
+    setLogs(logs.filter(log => log.id !== id));
+  };
+
+  const totalHours = (logs.reduce((acc, curr) => acc + curr.minutes, 0) / 60).toFixed(1);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-full flex flex-col">
+      <div className="flex items-center gap-2 mb-6 text-slate-900">
+        <History className="w-6 h-6 text-indigo-600" />
+        <h3 className="font-bold text-xl">Session Tracker</h3>
+      </div>
+
+      <div className="flex items-center gap-4 mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+        <div className="p-3 bg-white rounded-full shadow-sm text-indigo-600">
+          <Clock className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-sm text-slate-500 font-medium">Total Study Time</p>
+          <p className="text-2xl font-bold text-slate-900">{totalHours} <span className="text-sm font-normal text-slate-500">hours</span></p>
+        </div>
+      </div>
+
+      <form onSubmit={addSession} className="flex gap-2 mb-6">
+        <input 
+          type="text" 
+          placeholder="Subject" 
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <input 
+          type="number" 
+          placeholder="Mins" 
+          value={minutes}
+          onChange={(e) => setMinutes(e.target.value)}
+          className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <button type="submit" className="bg-indigo-600 text-white px-4 rounded-lg hover:bg-indigo-700 text-sm font-bold">
+          +
+        </button>
+      </form>
+
+      <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-64">
+        {logs.length === 0 && (
+          <p className="text-center text-slate-400 text-sm py-8">No sessions logged yet.</p>
+        )}
+        {logs.map(log => (
+          <div key={log.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg group">
+            <div>
+              <p className="font-bold text-slate-700 text-sm">{log.subject}</p>
+              <p className="text-xs text-slate-400">{log.date}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-mono font-medium text-indigo-600">{log.minutes}m</span>
+              <button onClick={() => deleteLog(log.id)} className="text-slate-300 hover:text-red-400">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PriceCalculator = () => {
+  const [serviceType, setServiceType] = useState('tutoring');
+  const [gradeLevel, setGradeLevel] = useState('primary'); // 'primary' or 'highschool'
+  const [hours, setHours] = useState(1);
+  const [distance, setDistance] = useState(0);
+  const [noteType, setNoteType] = useState('basic'); // 'basic' or 'premium'
+  const [numTopics, setNumTopics] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // Pricing Constants
+  const RATES = {
+    primary: 120,    // Per hour
+    highschool: 150, // Per hour
+    transportParams: {
+      rate: 5.95,
+      distanceUnit: 2 // Every 2km
+    },
+    notes: {
+      basic: 80,    // Per topic
+      premium: 100  // R80 + R20 for practice questions
+    }
+  };
+
+  useEffect(() => {
+    let calculated = 0;
+
+    if (serviceType === 'notes') {
+      // Notes Calculation
+      const rate = noteType === 'premium' ? RATES.notes.premium : RATES.notes.basic;
+      calculated = rate * numTopics;
+    } else {
+      // Tutoring Calculation (Virtual, One-on-One, Telephonic)
+      const hourlyRate = gradeLevel === 'highschool' ? RATES.highschool : RATES.primary;
+      calculated = hourlyRate * hours;
+
+      // Add Transport for One-on-One
+      if (serviceType === 'oneonone' && distance > 0) {
+        // R5.95 for every 2km
+        const transportCost = (distance / RATES.transportParams.distanceUnit) * RATES.transportParams.rate;
+        calculated += transportCost;
+      }
+    }
+    setTotal(calculated);
+  }, [serviceType, gradeLevel, hours, distance, noteType, numTopics]);
+
+  return (
+    <div className="bg-slate-900 rounded-3xl p-8 text-white overflow-hidden relative shadow-2xl h-full">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-6">
+          <Calculator className="w-6 h-6 text-indigo-400" />
+          <h3 className="text-2xl font-bold">Price Estimator</h3>
+        </div>
+
+        <div className="space-y-6">
+          {/* Service Selector */}
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Service Type</label>
+            <select 
+              value={serviceType}
+              onChange={(e) => setServiceType(e.target.value)}
+              className="w-full bg-slate-800 border-none rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="tutoring">Virtual / Telephonic Tutoring</option>
+              <option value="oneonone">One-on-One (In Person)</option>
+              <option value="notes">Study Notes Pack (Pre-order)</option>
+            </select>
+          </div>
+
+          {serviceType === 'notes' ? (
+            /* Notes Specific Controls */
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+               <div>
+                <label className="block text-sm text-slate-400 mb-2">Package Type</label>
+                <div className="flex gap-2 p-1 bg-slate-800 rounded-xl">
+                  <button 
+                    onClick={() => setNoteType('basic')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${noteType === 'basic' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Basic (R80)
+                  </button>
+                  <button 
+                    onClick={() => setNoteType('premium')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${noteType === 'premium' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Premium (+R20)
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {noteType === 'premium' ? 'Includes exam summaries & practice questions.' : 'Standard topic summary.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">
+                  Number of Topics
+                </label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="20" 
+                    value={numTopics}
+                    onChange={(e) => setNumTopics(parseInt(e.target.value))}
+                    className="w-full accent-indigo-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="font-mono text-xl w-12 text-center">{numTopics}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Tutoring Specific Controls */
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Grade Level</label>
+                <div className="flex gap-2 p-1 bg-slate-800 rounded-xl">
+                  <button 
+                    onClick={() => setGradeLevel('primary')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${gradeLevel === 'primary' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Primary - Gr 8
+                  </button>
+                  <button 
+                    onClick={() => setGradeLevel('highschool')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${gradeLevel === 'highschool' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Gr 10 - 12
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Duration (Hours)</label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="5" 
+                    step="0.5"
+                    value={hours}
+                    onChange={(e) => setHours(parseFloat(e.target.value))}
+                    className="w-full accent-indigo-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="font-mono text-xl w-12 text-center">{hours}h</span>
+                </div>
+              </div>
+
+              {serviceType === 'oneonone' && (
+                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                  <label className="block text-sm text-slate-400 mb-2">
+                    Travel Distance (km)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="50" 
+                      value={distance}
+                      onChange={(e) => setDistance(parseInt(e.target.value))}
+                      className="w-full accent-indigo-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="font-mono text-xl w-12 text-center">{distance}</span>
+                  </div>
+                  <p className="text-xs text-indigo-400 mt-1">
+                    + R{((distance / 2) * 5.95).toFixed(2)} transport fee
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="pt-6 border-t border-slate-700 mt-6">
+            <div className="flex justify-between items-end">
+              <span className="text-slate-400">Estimated Total</span>
+              <span className="text-4xl font-bold text-indigo-400">R{total.toFixed(2)}</span>
+            </div>
+            {serviceType === 'notes' && (
+              <p className="text-right text-xs text-yellow-500 mt-2 flex items-center justify-end gap-1">
+                <Clock className="w-3 h-3" /> Min. 1 day waiting period
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main App Component ---
+
+const App = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [formStatus, setFormStatus] = useState('idle');
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setIsMenuOpen(false);
+    }
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setFormStatus('sending');
+    setTimeout(() => {
+      setFormStatus('success');
+      setTimeout(() => setFormStatus('idle'), 3000);
+    }, 1500);
+  };
+
+  const services = [
+    {
+      id: 'notes',
+      icon: BookOpen,
+      title: 'Study Notes Pack',
+      description: 'Topic-based summaries available for pre-order.',
+      price: 'From R80 / topic',
+      features: ['Exam-focused summaries (+R20)', 'Practice Questions Included in Premium', 'Min. 1 Day Waiting Period', 'PDF Format'],
+      popular: false
+    },
+    {
+      id: 'virtual',
+      icon: Video,
+      title: 'Virtual & Telephonic',
+      description: 'Remote learning via Zoom/Teams or phone call.',
+      price: 'R120 - R150 / hr',
+      features: ['Primary: R120/hr', 'High School: R150/hr', 'Flexible Scheduling', 'No Transport Fees'],
+      popular: true
+    },
+    {
+      id: 'oneonone',
+      icon: MapPin,
+      title: 'One-on-One',
+      description: 'In-person coaching at your preferred location.',
+      price: 'Base Rate + Travel',
+      features: ['Personalized Attention', 'Transport: R5.95 per 2km', 'Physical Materials', 'Face-to-Face Interaction'],
+      popular: false
+    }
+  ];
+
+  const primarySubjects = [
+    "Mathematics",
+    "Natural Science & Tech",
+    "Social Science",
+    "English",
+    "Economics & Management Science"
+  ];
+
+  const highSchoolSubjects = [
+    "Mathematical Literacy",
+    "Economics",
+    "Business Studies",
+    "Accounting"
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Navigation */}
+      <nav className="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div onClick={() => scrollToSection('home')} className="flex-shrink-0">
+              <Logo />
+            </div>
+            
+            {/* Desktop Menu */}
+            <div className="hidden md:flex space-x-8">
+              {['Home', 'Student Portal', 'Services', 'Pricing', 'Contact'].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => scrollToSection(item.replace(' ', '').toLowerCase())}
+                  className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+                >
+                  {item}
+                </button>
+              ))}
+              <button 
+                onClick={() => scrollToSection('contact')}
+                className="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+              >
+                Book Now
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-600">
+                {isMenuOpen ? <X /> : <Menu />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 animate-fade-in-down">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+              {['Home', 'Student Portal', 'Services', 'Pricing', 'Contact'].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => scrollToSection(item.replace(' ', '').toLowerCase())}
+                  className="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      <section id="home" className="pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-indigo-50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+            <div className="mb-12 lg:mb-0">
+              <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 leading-tight mb-6">
+                Unlock Your <br/>
+                <span className="text-indigo-600 relative">
+                  Brainiac
+                  <svg className="absolute w-full h-3 -bottom-1 left-0 text-yellow-300" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" className="opacity-50" />
+                  </svg>
+                </span> 
+                Potential
+              </h1>
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-lg">
+                Comprehensive tutoring tailored to your grade. From specialized high school subjects to primary school foundations.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={() => scrollToSection('contact')}
+                  className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 transform hover:-translate-y-1 transition-all"
+                >
+                  Start Learning
+                </button>
+                <button 
+                  onClick={() => scrollToSection('studentportal')}
+                  className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  Try Brain Gym <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-full">
+               {/* Show calculator on hero */}
+              <PriceCalculator />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Student Portal (Interactive Games & Tracker) */}
+      <section id="studentportal" className="py-20 bg-slate-900 text-white relative overflow-hidden">
+        {/* Decorative background blobs */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600 rounded-full blur-3xl opacity-10 -ml-20 -mt-20"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-600 rounded-full blur-3xl opacity-10 -mr-20 -mb-20"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-900/50 text-indigo-300 font-medium text-sm mb-4 border border-indigo-700/50">
+              <Zap className="w-4 h-4" />
+              Interactive Zone
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Student Portal</h2>
+            <p className="text-slate-400">Track your progress and sharpen your skills with our built-in tools.</p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            <MathGame />
+            <StudyTracker />
+          </div>
+        </div>
+      </section>
+
+      {/* Services Overview */}
+      <section id="services" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">Flexible Learning Options</h2>
+            <p className="text-lg text-slate-600">
+              Choose the mode of learning that fits your needs. 
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {services.map((service) => (
+              <ServiceCard 
+                key={service.id} 
+                {...service} 
+                onSelect={() => scrollToSection('contact')}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Detailed Subjects Section */}
+      <section id="subjects" className="py-20 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">Subjects & Grade Rates</h2>
+            <p className="text-slate-600">We specialize in these core areas to ensure maximum results.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+            {/* Primary - Grade 8 */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
+              <div className="bg-indigo-600 p-6 text-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-1">Primary - Grade 8</h3>
+                    <p className="text-indigo-200 text-sm">Foundation Phase & Senior Phase</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="mt-6 text-3xl font-bold">R120 <span className="text-base font-normal opacity-80">/ hour</span></div>
+              </div>
+              <div className="p-8">
+                <ul className="space-y-4">
+                  {primarySubjects.map((sub, i) => (
+                    <li key={i} className="flex items-center text-slate-700">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3"></div>
+                      {sub}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* High School */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-indigo-100 relative">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-300 opacity-20 rounded-bl-full"></div>
+              <div className="bg-slate-900 p-6 text-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-1">Grade 10 - 12</h3>
+                    <p className="text-slate-400 text-sm">Specialized High School Subjects</p>
+                  </div>
+                  <div className="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                    <Brain className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="mt-6 text-3xl font-bold text-yellow-400">R150 <span className="text-base font-normal text-slate-400">/ hour</span></div>
+              </div>
+              <div className="p-8">
+                <ul className="space-y-4">
+                  {highSchoolSubjects.map((sub, i) => (
+                    <li key={i} className="flex items-center text-slate-700">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></div>
+                      {sub}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing/Transport Info Section */}
+      <section id="pricing" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6">Transport & Notes Pricing</h2>
+              <div className="prose prose-slate text-slate-600 mb-8">
+                <p>
+                  <strong>Transport Fee:</strong> For in-person sessions, we charge a fuel levy of <span className="text-indigo-600 font-bold">R5.95 for every 2km</span> traveled to your location.
+                </p>
+                <p>
+                  <strong>Study Notes:</strong> Notes are pre-ordered with a minimum 1-day waiting period. Pricing is per topic, not per subject.
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                    <MapPin className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">Transport Calculation</h4>
+                    <p className="text-sm text-slate-600">R5.95 per 2km (In-person only)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">Notes Breakdown</h4>
+                    <p className="text-sm text-slate-600">R80/topic (Basic) | +R20 for Exam Summaries & Questions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Visual Decorator instead of Reviews */}
+            <div className="mt-10 lg:mt-0 relative">
+               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl transform rotate-3 opacity-10"></div>
+               <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100 relative">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                       <Zap className="w-6 h-6 text-yellow-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">Why Brainiac?</h3>
+                      <p className="text-sm text-slate-500">Tailored to your curriculum</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-3">
+                    <li className="flex items-center gap-3 text-slate-700">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Specialized High School Coaching</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-slate-700">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Exam-Focused Study Packs</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-slate-700">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Flexible Virtual or In-Person Options</span>
+                    </li>
+                  </ul>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 bg-slate-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">Get in Touch</h2>
+            <p className="text-slate-600 mb-8">Contact us directly or send a request below.</p>
+            
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 mb-8">
+              <a href="mailto:kkmasubelele@gmail.com" className="flex items-center justify-center gap-2 px-6 py-3 bg-white rounded-lg shadow-sm text-slate-700 hover:text-indigo-600 transition-colors">
+                <Mail className="w-5 h-5" />
+                <span>kkmasubelele@gmail.com</span>
+              </a>
+              <a href="tel:0602474734" className="flex items-center justify-center gap-2 px-6 py-3 bg-white rounded-lg shadow-sm text-slate-700 hover:text-indigo-600 transition-colors">
+                <Phone className="w-5 h-5" />
+                <span>060 247 4734</span>
+              </a>
+            </div>
+          </div>
+
+          <form onSubmit={handleFormSubmit} className="space-y-6 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Session Booking / Notes Order</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Student Name</label>
+                <input required type="text" className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Grade</label>
+                <select className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                  <option>Grade 1-8</option>
+                  <option>Grade 10</option>
+                  <option>Grade 11</option>
+                  <option>Grade 12</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Service Needed</label>
+                <select className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                  <option>Virtual Tutoring</option>
+                  <option>One-on-One (In Person)</option>
+                  <option>Order Notes</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
+                <input required type="text" placeholder="e.g. Maths Lit" className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Message / Specific Topics</label>
+              <textarea rows="4" placeholder="If ordering notes, please list the topics here..." className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"></textarea>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={formStatus === 'sending' || formStatus === 'success'}
+              className={`w-full py-4 rounded-xl font-bold text-white transition-all transform hover:-translate-y-1 ${
+                formStatus === 'success' ? 'bg-green-500' : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+              }`}
+            >
+              {formStatus === 'idle' && 'Send Request'}
+              {formStatus === 'sending' && 'Sending...'}
+              {formStatus === 'success' && 'Request Sent Successfully!'}
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-slate-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-2">
+               <Brain className="text-white w-6 h-6" />
+               <span className="text-2xl font-bold text-white">Brainiac</span>
+            </div>
+            <div className="text-sm">
+              &copy; {new Date().getFullYear()} Brainiac Tutoring Services. All rights reserved.
+            </div>
+            <div className="flex gap-6">
+              <a href="mailto:kkmasubelele@gmail.com" className="hover:text-white transition-colors"><Mail className="w-5 h-5"/></a>
+              <a href="tel:0602474734" className="hover:text-white transition-colors"><Phone className="w-5 h-5"/></a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
